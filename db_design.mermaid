@@ -1,0 +1,137 @@
+---
+config:
+  look: neo
+---
+erDiagram
+    USER {
+        string uid PK "Firebase Auth UID - Guardian/Family Member"
+        string email "Guardian's email from Firebase Auth"
+        string displayName "Guardian's name from Firebase Auth"
+        boolean emailVerified "from Firebase Auth"
+        datetime created_at "from Firebase Auth metadata"
+        datetime updated_at
+        json client_profile "embedded profile of person with special needs"
+    }
+    CATEGORY {
+        int id PK
+        string name "e.g., Clothing, Hygiene, Food, Medical"
+        string description
+        string color_code "for UI display"
+        int display_order
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+    CARE_ITEM {
+        int id PK
+        string name
+        decimal estimated_unit_cost
+        int quantity_per_purchase "default 1 - typical bulk quantity"
+        string quantity_unit "e.g., piece, pack, bottle"
+        date start_date
+        date end_date "nullable - when item no longer needed"
+        boolean is_active "false = soft deleted"
+        int category_id FK
+        int created_by FK
+        datetime deactivated_at "nullable - when soft deleted"
+        datetime created_at
+        datetime updated_at
+    }
+    CARE_TASK {
+        int id PK
+        string name
+        text description
+        date start_date
+        date end_date "nullable - when task should stop generating executions"
+        int recurrence_interval_days "0 for one-off, 7 for weekly, 30 for monthly, 365 for yearly"
+        string task_type "PURCHASE or GENERAL"
+        boolean is_active "false = soft deleted"
+        int care_item_id FK "nullable"
+        int created_by FK
+        datetime deactivated_at "nullable - when soft deleted"
+        datetime created_at
+        datetime updated_at
+    }
+    TASK_EXECUTION {
+        int id PK
+        int care_task_id FK
+        string status "TODO, DONE, COVERED, REFUNDED, PARTIALLY_REFUNDED, CANCELLED"
+        int quantity_purchased "default 1 - actual quantity bought"
+        string quantity_unit "e.g., piece, pack, bottle"
+        decimal actual_cost "nullable - total cost for quantity purchased"
+        string evidence_url "nullable"
+        date scheduled_date
+        date execution_date "nullable - when actually completed"
+        int covered_by_execution_id FK "nullable - links to bulk purchase"
+        int executed_by FK "nullable"
+        text notes "optional notes"
+        datetime created_at
+        datetime updated_at
+    }
+    REFUND {
+        int id PK
+        int task_execution_id FK
+        decimal refund_amount
+        text refund_reason
+        string refund_evidence_url "refund receipt/confirmation"
+        date refund_date
+        int refunded_by FK "user who processed refund"
+        datetime created_at
+        datetime updated_at
+    }
+    BUDGET {
+        int id PK
+        int year
+        decimal total_budget "CALCULATED: sum of all items' yearly costs"
+        decimal total_spent "CALCULATED: sum of all actual costs"
+        decimal total_remaining "CALCULATED: total_budget - total_spent"
+        int created_by FK
+        datetime last_calculated_at "when calculations were refreshed"
+        datetime created_at
+        datetime updated_at
+    }
+    CATEGORY_BUDGET {
+        int id PK
+        int budget_id FK
+        int category_id FK
+        decimal category_budget "CALCULATED: sum of category items' yearly costs"
+        decimal category_spent "CALCULATED: sum of category actual costs"
+        decimal category_remaining "CALCULATED: category_budget - category_spent"
+        datetime last_calculated_at "when calculations were refreshed"
+        datetime created_at
+        datetime updated_at
+    }
+    CLIENT_PROFILE {
+        string full_name "Person with special needs' full name"
+        date date_of_birth "Client's date of birth"
+        string sex "Client's sex/gender identity"
+        int age "Client's calculated or manually entered age"
+        string mobile_number "Client's mobile number"
+        string email_address "Client's email address"
+        string postal_address "Client's postal address"
+        json emergency_contacts "Emergency contacts for the client"
+        text notes "General notes about the client's care needs"
+        text medical_conditions "Client's medical conditions"
+        text allergies "Client's known allergies"
+        text medications "Client's current medications"
+        text accessibility_needs "Client's accessibility requirements"
+        json latest_vitals "Client's latest vital signs measurements"
+        boolean is_active "Whether client profile is active"
+        datetime created_at "When client profile was created"
+        datetime updated_at "When client profile was last updated"
+    }
+    USER ||--o{ CARE_ITEM : "creates"
+    USER ||--o{ CARE_TASK : "creates"
+    USER ||--o{ TASK_EXECUTION : "executes"
+    USER ||--o{ BUDGET : "creates"
+    USER ||--o{ REFUND : "processes"
+    CATEGORY ||--o{ CARE_ITEM : "categorizes"
+    CATEGORY ||--o{ CATEGORY_BUDGET : "has budgets"
+    BUDGET ||--o{ CATEGORY_BUDGET : "contains"
+    CARE_ITEM ||--o{ CARE_TASK : "generates"
+    CARE_TASK ||--o{ TASK_EXECUTION : "has"
+    TASK_EXECUTION ||--o{ REFUND : "can have"
+    TASK_EXECUTION ||--o{ TASK_EXECUTION : "covers future executions"
+    CARE_ITEM }o--o{ BUDGET : "determines budget via calculations"
+    CARE_ITEM }o--o{ CATEGORY_BUDGET : "determines budget via calculations"
+    USER ||--|| CLIENT_PROFILE : "manages care for (embedded profile)"
