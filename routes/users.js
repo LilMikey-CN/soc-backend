@@ -42,23 +42,19 @@ router.put('/client-profile', async (req, res) => {
       latest_vitals
     } = req.body;
 
-    // Validation
-    if (!full_name || !date_of_birth || !sex || !mobile_number || !email_address) {
-      return res.status(400).json({
-        error: 'Missing required fields: full_name, date_of_birth, sex, mobile_number, email_address'
-      });
-    }
-
-    // Validate sex field
-    if (!['Male', 'Female', 'Other', 'Prefer not to say'].includes(sex)) {
+    // Validate sex field if provided
+    if (sex && !['Male', 'Female', 'Other', 'Prefer not to say'].includes(sex)) {
       return res.status(400).json({
         error: 'sex must be one of: Male, Female, Other, Prefer not to say'
       });
     }
 
-    // Calculate age if not provided
-    const birthDate = new Date(date_of_birth);
-    const calculatedAge = age || Math.floor((new Date() - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
+    // Calculate age if date_of_birth is provided and age is not
+    let calculatedAge = age;
+    if (date_of_birth && !age) {
+      const birthDate = new Date(date_of_birth);
+      calculatedAge = Math.floor((new Date() - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
+    }
 
     // Validate emergency contacts format if provided
     if (emergency_contacts && !Array.isArray(emergency_contacts)) {
@@ -75,24 +71,26 @@ router.put('/client-profile', async (req, res) => {
     }
 
     const clientProfileData = {
-      full_name,
-      date_of_birth: new Date(date_of_birth),
-      sex,
-      age: calculatedAge,
-      mobile_number,
-      email_address,
-      postal_address: postal_address || '',
-      emergency_contacts: emergency_contacts || [],
-      notes: notes || '',
-      medical_conditions: medical_conditions || null,
-      allergies: allergies || null,
-      medications: medications || null,
-      accessibility_needs: accessibility_needs || null,
-      latest_vitals: latest_vitals || null,
       is_active: true,
       created_at: new Date(),
       updated_at: new Date()
     };
+
+    // Only include fields that are provided
+    if (full_name !== undefined) clientProfileData.full_name = full_name;
+    if (date_of_birth !== undefined) clientProfileData.date_of_birth = new Date(date_of_birth);
+    if (sex !== undefined) clientProfileData.sex = sex;
+    if (calculatedAge !== undefined) clientProfileData.age = calculatedAge;
+    if (mobile_number !== undefined) clientProfileData.mobile_number = mobile_number;
+    if (email_address !== undefined) clientProfileData.email_address = email_address;
+    if (postal_address !== undefined) clientProfileData.postal_address = postal_address;
+    if (emergency_contacts !== undefined) clientProfileData.emergency_contacts = emergency_contacts;
+    if (notes !== undefined) clientProfileData.notes = notes;
+    if (medical_conditions !== undefined) clientProfileData.medical_conditions = medical_conditions;
+    if (allergies !== undefined) clientProfileData.allergies = allergies;
+    if (medications !== undefined) clientProfileData.medications = medications;
+    if (accessibility_needs !== undefined) clientProfileData.accessibility_needs = accessibility_needs;
+    if (latest_vitals !== undefined) clientProfileData.latest_vitals = latest_vitals;
 
     // Get Firebase Auth user data (if available)
     let userRecord = null;
