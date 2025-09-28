@@ -44,12 +44,12 @@ This API manages client profiles as embedded documents within user records, prov
 
 ```json
 {
-  "full_name": "string",              // Required
-  "date_of_birth": "YYYY-MM-DD",     // Required (ISO date string)
-  "sex": "string",                   // Required: "Male", "Female", "Other", "Prefer not to say"
+  "full_name": "string",              // Optional
+  "date_of_birth": "YYYY-MM-DD",     // Optional (ISO date string)
+  "sex": "string",                   // Optional: "Male", "Female", "Other", "Prefer not to say"
   "age": "number",                   // Optional (auto-calculated from date_of_birth if not provided)
-  "mobile_number": "string",         // Required
-  "email_address": "string",         // Required
+  "mobile_number": "string",         // Optional
+  "email_address": "string",         // Optional
   "postal_address": "string",        // Optional
   "emergency_contacts": [            // Optional array
     {
@@ -107,7 +107,7 @@ This API manages client profiles as embedded documents within user records, prov
 ```
 
 **Error Responses:**
-- `400 Bad Request` - Missing required fields or invalid data format
+- `400 Bad Request` - Invalid data format (e.g., invalid sex value, malformed arrays)
 - `401 Unauthorized` - Invalid or missing authentication token
 - `500 Internal Server Error` - Server error
 
@@ -391,12 +391,13 @@ interface VitalSigns {
 
 ### Validation Rules
 
-1. **Required Fields**: `full_name`, `date_of_birth`, `sex`, `mobile_number`, `email_address`
-2. **Sex Field**: Must be one of: "Male", "Female", "Other", "Prefer not to say"
+1. **All Fields Optional**: No fields are required - you can create a profile with any subset of fields
+2. **Sex Field**: Must be one of: "Male", "Female", "Other", "Prefer not to say" (if provided)
 3. **Emergency Contacts**: Must be an array of objects if provided
 4. **Latest Vitals**: Must be an object if provided
-5. **Date Fields**: Must be valid ISO date strings
-6. **Age Calculation**: Automatically calculated from `date_of_birth` if not provided
+5. **Date Fields**: Must be valid ISO date strings if provided
+6. **Age Calculation**: Automatically calculated from `date_of_birth` if date is provided but age is not
+7. **Incremental Updates**: Fields are only saved if explicitly provided (not undefined)
 
 ## Migration Guide
 
